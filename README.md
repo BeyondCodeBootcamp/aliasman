@@ -1,8 +1,8 @@
 # [aliasman](https://github.com/BeyondCodeBootcamp/aliasman)
 
-> Love your `alias`es again! 🥸
+> Love your *alias*es again! 🥸
 
-A cross-shell `alias` manager for `bash`, `zsh`, and `fish`
+A cross-shell (POSIX-compliant) _alias_ manager for `bash`, `zsh`, and `fish`
 
 ## Install
 
