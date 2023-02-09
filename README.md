@@ -1,8 +1,12 @@
 # [aliasman](https://github.com/BeyondCodeBootcamp/aliasman)
 
-An alias manager for bash, zsh, and fish
+> Love your `alias`es again! 🥸
+
+A cross-shell `alias` manager for `bash`, `zsh`, and `fish`
 
 ## Install
+
+**Mac**, **Linux**:
 
 ```sh
 curl -sS https://webi.sh/aliasman | sh
