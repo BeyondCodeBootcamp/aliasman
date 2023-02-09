@@ -34,11 +34,27 @@ gc "feat: new feature"
 
 ## Install
 
-**Mac**, **Linux**:
+**Mac**, **Linux** via [webi](https://webinstall.dev/) (<https://webinstall.dev/aliasman>):
 
 ```sh
 curl -sS https://webi.sh/aliasman | sh
 source ~/.config/envman/PATH.env
+```
+
+**GitHub Releases**:
+
+```sh
+# pick version
+my_version="v1.0.0"
+
+# download and unpack
+curl -o "aliasman-${my_version}.tar.gz" \
+    -fL "https://github.com/BeyondCodeBootcamp/aliasman/archive/refs/tags/${my_version}.tar.gz"
+tar xvf "aliasman-${my_version}.tar.gz"
+
+# install to somewhere in your PATH
+mkdir -p ~/bin
+mv ./aliasman-*/aliasman ~/bin/
 ```
 
 ## Usage
