@@ -1,0 +1,240 @@
+#!/bin/sh
+# shellcheck disable=SC2016,SC2088
+set -e
+set -u
+
+fn_help() {
+    echo ""
+    echo "USAGE"
+    echo ""
+    echo "    # Set alias"
+    echo "    aliasman [--] <aliasname> <command> [flags, opts, args, pipes, etc]"
+    echo ""
+    echo "    # Check alias"
+    echo "    aliasman [--] <aliasname>"
+    echo ""
+    echo "    # Delete alias"
+    echo "    aliasman -d [--] <aliasname>"
+
+    echo ""
+    echo "    aliasman help"
+    echo "    aliasman version"
+    echo ""
+    echo "EXAMPLES"
+    echo ""
+    echo "    aliasman curl curlie"
+    echo "    aliasman ls lsd -F"
+    echo "    aliasman la lsd -AF"
+    echo "    aliasman ll lsd -lAhF"
+    echo "    aliasman tree lsd -F --tree"
+    echo "    aliasman xrnd xxd -l24 -ps /dev/urandom"
+    echo ""
+    echo "FILES"
+    echo ""
+    echo "    ~/.bashrc"
+    echo "    ~/.config/envman/alias.env"
+    echo "    ~/.config/envman/load.sh"
+    echo "    ~/.config/envman/load.fish"
+    echo "    ~/.config/fish/config.fish"
+    echo "    ~/.profile"
+    echo "    ~/.zshrc"
+    echo ""
+    echo "NOTES"
+    echo ""
+    echo "    You may use single quotes around the alias definition, like so:"
+    echo ""
+    echo "        # generate 24 random bytes, url-safe base64-encoded"
+    echo "        aliasman rnd 'xxd -l24 -ps /dev/urandom |
+                          xxd -r -ps |
+                          base64 |
+                          tr -d = |
+                          tr + - |
+                          tr / _'"
+    echo ""
+    echo "    However, the use of single quotes as part of flags, options, and arguments"
+    echo "    is not yet supported. Neither are newlines."
+    echo ""
+}
+
+fn_version() {
+    echo "aliasman v1.0.0 (2023-02-09)"
+}
+
+fn_init() {
+    mkdir -p ~/.config/envman/
+    if [ ! -e ~/.config/envman/alias.env ]; then
+        touch ~/.config/envman/alias.env
+    fi
+
+    if [ ! -e ~/.config/envman/load.sh ]; then
+        # shellcheck disable=SC2016
+        {
+            echo '# Generated for envman. Do not edit.'
+            echo 'for x in ~/.config/envman/*.env; do'
+            echo '    my_basename="$(basename "${x}")"'
+            echo '    if [ "*.env" = "${my_basename}" ]; then'
+            echo '        continue'
+            echo '    fi'
+            echo ''
+            echo '    # shellcheck source=/dev/null'
+            echo '    . "${x}"'
+            echo 'done'
+        } > ~/.config/envman/load.sh
+    fi
+
+    if [ ! -e ~/.config/envman/load.fish ]; then
+        # shellcheck disable=SC2016
+        {
+            echo '# Generated for envman. Do not edit.'
+            echo 'for x in ~/.config/envman/*.env'
+            echo '	  source "$x"'
+            echo 'end'
+        } > ~/.config/envman/load.fish
+    fi
+
+    if ! grep -q -F '/.config/envman/load.sh' ~/.profile; then
+        fn_echo_load_sh >> ~/.profile
+    fi
+    if command -v bash > /dev/null; then
+        if [ -e ~/.bashrc ]; then
+            if ! grep -q -F '/.config/envman/load.sh' ~/.bashrc; then
+                fn_echo_load_sh >> ~/.bashrc
+            fi
+        fi
+    fi
+    if command -v zsh > /dev/null; then
+        if [ -e ~/.zshrc ]; then
+            if ! grep -q -F '/.config/envman/load.sh' ~/.zshrc; then
+                fn_echo_load_sh >> ~/.zshrc
+            fi
+        fi
+    fi
+    if command -v fish > /dev/null; then
+        mkdir -p ~/.config/fish
+        if [ -e ~/.config/fish/config.fish ]; then
+            touch ~/.config/fish/config.fish
+        fi
+        if ! grep -q -F '/.config/envman/load.fish' ~/.config/fish/config.fish; then
+            fn_echo_load_fish >> ~/.config/fish/config.fish
+        fi
+    fi
+}
+
+fn_echo_load_fish() {
+    echo ''
+    echo '# Generated for envman. Do not edit.'
+    echo 'test -s "$HOME/.config/envman/load.fish"; and source "$HOME/.config/envman/load.fish"'
+}
+
+fn_echo_load_sh() {
+    echo ''
+    echo '# Generated for envman. Do not edit.'
+    echo '[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"'
+}
+
+fn_init
+
+if [ "-h" = "${1-}" ] || [ "--help" = "${1-}" ] || [ "help" = "${1-}" ]; then
+    fn_help
+    exit 0
+fi
+
+if [ "-V" = "${1-}" ] || [ "--version" = "${1-}" ] || [ "version" = "${1-}" ]; then
+    fn_version
+    exit 0
+fi
+
+my_remove=""
+if [ "-d" = "${1-}" ] || [ "--delete" = "${1-}" ]; then
+    my_remove="true"
+    shift 1
+fi
+
+my_alias="${1-}"
+if [ -z "${my_alias}" ]; then
+    fn_help
+    exit 1
+fi
+shift 1
+
+my_command="$(
+    # shellcheck disable=SC2048,SC2086
+    echo ${*-}
+)"
+my_command_name="$(
+    # shellcheck disable=SC2086
+    echo $my_command | cut -d' ' -f1
+)"
+
+my_current="$(
+    grep -E "^alias ${my_alias}=" ~/.config/envman/alias.env |
+        cut -d'=' -f2- || true
+)"
+
+my_new="alias ${my_alias}='${my_command}'"
+
+fn_remove() {
+    if [ -n "${my_command}" ]; then
+        "Incorrect usage. See help"
+        return 1
+    fi
+
+    if [ -z "${my_current}" ]; then
+        echo "alias '${my_alias}' is not set"
+        return 1
+    fi
+
+    printf 'Removing "alias %s=%s" ... ' "${my_alias}" "${my_current}"
+
+    mv ~/.config/envman/alias.env ~/.config/envman/alias.env.bak
+    sed "/^alias ${my_alias}=/d" ~/.config/envman/alias.env.bak > \
+        ~/.config/envman/alias.env
+
+    echo "success!"
+}
+
+fn_set() {
+    if ! command -v "${my_command_name}" > /dev/null; then
+        echo "aliasman: command '${my_command_name}' not found"
+        exit 1
+    fi
+
+    if [ -z "${my_current}" ]; then
+        printf "Setting \"alias %s='%s'\" ... " "${my_alias}" "${my_command}"
+
+        echo "${my_new}" >> ~/.config/envman/alias.env
+
+        echo "success!"
+        return 0
+    fi
+
+    printf "Replacing \"alias %s=%s\" with \"alias %s='%s'\" ... " "${my_alias}" "${my_current}" "${my_alias}" "${my_command}"
+
+    mv ~/.config/envman/alias.env ~/.config/envman/alias.env.bak
+    sed "/^alias ${my_alias}=/d" ~/.config/envman/alias.env.bak > \
+        ~/.config/envman/alias.env
+    echo "${my_new}" >> ~/.config/envman/alias.env
+
+    echo "success!"
+}
+
+fn_get() {
+    if [ -n "${my_current}" ]; then
+        echo "alias ${my_alias}=${my_current}"
+        return 0
+    fi
+
+    echo "alias ${my_alias}=(not set)"
+}
+
+if [ -n "${my_remove}" ]; then
+    fn_remove # "${my_alias}" "${my_current}"
+    exit 0
+fi
+
+if [ -n "${my_command}" ]; then
+    fn_set # "${my_alias}" "${my_command}" "${my_current}"
+    exit 0
+fi
+
+fn_get # "${my_alias}"
