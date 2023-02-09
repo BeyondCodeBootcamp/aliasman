@@ -3,33 +3,42 @@
 set -e
 set -u
 
-fn_help() {
-    echo ""
-    echo "USAGE"
-    echo ""
-    echo "    # Set alias"
-    echo "    aliasman [--] <aliasname> <command> [flags, opts, args, pipes, etc]"
-    echo ""
-    echo "    # Check alias"
-    echo "    aliasman [--] <aliasname>"
-    echo ""
-    echo "    # Delete alias"
-    echo "    aliasman -d [--] <aliasname>"
+fn_version() {
+    echo "aliasman v1.0.0 (2023-02-09)"
+}
 
+fn_help() {
+    fn_version
+    echo "A cross-shell (POSIX-compliant) alias manager for bash, zsh, and fish"
     echo ""
-    echo "    aliasman help"
-    echo "    aliasman version"
+    echo "USAGE:"
+    echo "    aliasman [FLAGS] [--] <aliasname> [command] [flags, opts, args, pipes, etc]"
     echo ""
-    echo "EXAMPLES"
+    echo "FLAGS:"
+    echo "    -d, --delete                     Delete by aliasname"
+    echo "    -e, --edit                       Open ~/.config/envman/alias.sh for editing"
+    echo "        --help                       Prints help information"
+    echo "    -V, --version                    Prints version information"
     echo ""
-    echo "    aliasman curl curlie"
-    echo "    aliasman ls lsd -F"
-    echo "    aliasman la lsd -AF"
-    echo "    aliasman ll lsd -lAhF"
-    echo "    aliasman tree lsd -F --tree"
-    echo "    aliasman xrnd xxd -l24 -ps /dev/urandom"
+    echo "EXAMPLES:"
+    echo "    Add or replace:"
+    echo "        aliasman ll 'lsd -lAhF'"
     echo ""
-    echo "FILES"
+    echo "    View current:"
+    echo "        aliasman ll"
+    echo ""
+    echo "    Delete:"
+    echo "        aliasman -d ll"
+    echo ""
+    echo "    Common Aliases:"
+    echo "        aliasman curl curlie"
+    echo "        aliasman ls lsd -F"
+    echo "        aliasman la lsd -AF"
+    echo "        aliasman ll lsd -lAhF"
+    echo "        aliasman tree lsd -F --tree"
+    echo "        aliasman xrnd xxd -l24 -ps /dev/urandom"
+    echo ""
+    echo "FILES:"
     echo ""
     echo "    ~/.bashrc"
     echo "    ~/.config/envman/alias.env"
@@ -39,11 +48,11 @@ fn_help() {
     echo "    ~/.profile"
     echo "    ~/.zshrc"
     echo ""
-    echo "NOTES"
+    echo "LIMITATIONS:"
     echo ""
     echo "    You may use single quotes around the alias definition, like so:"
     echo ""
-    echo "        # generate 24 random bytes, url-safe base64-encoded"
+    echo "        # Generate 24 random bytes, url-safe base64-encoded"
     echo "        aliasman rnd 'xxd -l24 -ps /dev/urandom |
                           xxd -r -ps |
                           base64 |
@@ -54,10 +63,6 @@ fn_help() {
     echo "    However, the use of single quotes as part of flags, options, and arguments"
     echo "    is not yet supported. Neither are newlines."
     echo ""
-}
-
-fn_version() {
-    echo "aliasman v1.0.0 (2023-02-09)"
 }
 
 fn_init() {
@@ -134,20 +139,32 @@ fn_echo_load_sh() {
 
 fn_init
 
-if [ "-h" = "${1-}" ] || [ "--help" = "${1-}" ] || [ "help" = "${1-}" ]; then
-    fn_help
-    exit 0
-fi
-
-if [ "-V" = "${1-}" ] || [ "--version" = "${1-}" ] || [ "version" = "${1-}" ]; then
-    fn_version
-    exit 0
-fi
-
 my_remove=""
-if [ "-d" = "${1-}" ] || [ "--delete" = "${1-}" ]; then
-    my_remove="true"
+if [ "--" = "${1-}" ]; then
+    # A reasonable person could have an alias named 'version' or 'edit'.
+    # An unreasonable person could even have an alias named '-h'.
+    # Who am I to judge?
     shift 1
+else
+    if [ "-h" = "${1-}" ] || [ "--help" = "${1-}" ] || [ "help" = "${1-}" ]; then
+        fn_help
+        exit 0
+    fi
+
+    if [ "-V" = "${1-}" ] || [ "--version" = "${1-}" ] || [ "version" = "${1-}" ]; then
+        fn_version
+        exit 0
+    fi
+
+    if [ "-e" = "${1-}" ] || [ "--edit" = "${1-}" ] || [ "edit" = "${1-}" ]; then
+        ${VISUAL:-vim} ~/.config/envman/alias.env
+        exit 0
+    fi
+
+    if [ "-d" = "${1-}" ] || [ "--delete" = "${1-}" ]; then
+        my_remove="true"
+        shift 1
+    fi
 fi
 
 my_alias="${1-}"
@@ -229,11 +246,24 @@ fn_get() {
 
 if [ -n "${my_remove}" ]; then
     fn_remove # "${my_alias}" "${my_current}"
+    echo ""
+    echo "ONE MORE STEP:"
+    echo ""
+    echo "    Close and reopen your shell."
+    echo ""
     exit 0
 fi
 
 if [ -n "${my_command}" ]; then
     fn_set # "${my_alias}" "${my_command}" "${my_current}"
+    echo ""
+    echo "ONE MORE STEP:"
+    echo ""
+    echo "    Copy, paste, and run this to set the alias in the current shell:"
+    echo "    (or exit and reopen your terminal)"
+    echo ""
+    echo "    ${my_new}"
+    echo ""
     exit 0
 fi
 
