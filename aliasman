@@ -161,7 +161,7 @@ else
         exit 0
     fi
 
-    if [ "-d" = "${1-}" ] || [ "--delete" = "${1-}" ]; then
+    if [ "-d" = "${1-}" ] || [ "--delete" = "${1-}" ] || [ "delete" = "${1-}" ]; then
         my_remove="true"
         shift 1
     fi
