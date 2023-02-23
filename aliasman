@@ -165,6 +165,11 @@ else
         my_remove="true"
         shift 1
     fi
+
+    if [ "alias" = "${1-}" ]; then
+        # ignore 'alias' prefix for compat with copy-paste
+        shift 1
+    fi
 fi
 
 my_alias="${1-}"
@@ -174,9 +179,40 @@ if [ -z "${my_alias}" ]; then
 fi
 shift 1
 
+my_command=""
+case "${my_alias}" in
+*=*)
+    # Can handle either of:
+    #     cat='bat --style=plain'
+    #     cat=bat --style=plain
+    my_alias_bak="${my_alias}"
+    my_alias="$(
+        echo "${my_alias_bak}" | cut -d'=' -f1
+    )"
+
+    my_alias_len="${#my_alias}"
+    my_alias_len=$((my_alias_len + 2))
+
+    # Stores 'bat' in the case of
+    #     cat=bat --style=plain
+    my_command="$(
+        echo "${my_alias_bak}" | cut -c "${my_alias_len}"-
+    )"
+    ;;
+*)
+    # ignore
+    ;;
+esac
+
+# combines possible partial command with possible extra arguments
 my_command="$(
-    # shellcheck disable=SC2048,SC2086
-    echo ${*-}
+    # shellcheck disable=SC2046,SC2086
+    echo $(
+        # shellcheck disable=SC2046,SC2086
+        echo ${my_command}
+        # shellcheck disable=SC2048,SC2086
+        echo ${*-}
+    )
 )"
 my_command_name="$(
     # shellcheck disable=SC2086
