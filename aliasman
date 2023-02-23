@@ -4,7 +4,7 @@ set -e
 set -u
 
 fn_version() {
-    echo "aliasman v1.0.1 (2023-02-10)"
+    echo "aliasman v1.1.0 (2023-02-23)"
 }
 
 fn_help() {

@@ -45,7 +45,7 @@ source ~/.config/envman/PATH.env
 
 ```sh
 # pick version
-my_version="v1.0.0"
+my_version="v1.1.0"
 
 # download and unpack
 curl -o "aliasman-${my_version}.tar.gz" \
